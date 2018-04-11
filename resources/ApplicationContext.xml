@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/aop
+		http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://www.springframework.org/schema/context
+		http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/tx
+		http://www.springframework.org/schema/tx/spring-tx-3.2.xsd">
+
+    <!-- 配置数据源 -->
+    <bean id="DataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://127.0.0.1:3306/ssm"/>
+        <property name="username" value="root"/>
+        <property name="password" value="root"/>
+    </bean>
+
+    <!-- 配置sqlSessionFactory -->
+    <bean id="sqlSessionfactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 引入数据源 -->
+        <property name="dataSource" ref="DataSource"/>
+        <!--引入mybatis核心文件 -->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+    </bean>
+
+    <!-- 自动数据映射器 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.wyj.ssm.mapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionfactory"/>
+    </bean>
+
+    <!-- 配置注解 -->
+    <context:component-scan base-package="com.wyj.ssm.service.impl"/>
+
+
+    <!-- 声明式事务 -->
+    <!-- 定义事务管理器Bean，并为其注入数据源Bean -->
+    <bean id="transactionMapper"
+          class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="DataSource"/>
+    </bean>
+
+    <!-- 配置事务增强，绑定事务管理器并针对不同方法定义事务规则  -->
+    <tx:advice id="txAdvice" transaction-manager="transactionMapper">
+        <tx:attributes>
+            <tx:method name="find*" propagation="SUPPORTS"/>
+            <tx:method name="get*" propagation="SUPPORTS"/>
+            <tx:method name="add*" propagation="REQUIRED"/>
+            <tx:method name="update*" propagation="REQUIRED"/>
+            <tx:method name="motify*" propagation="REQUIRED"/>
+            <tx:method name="del*" propagation="REQUIRED"/>
+            <tx:method name="create*" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- 配置切面，将事务增强与方法切入点组合  -->
+    <aop:config>
+        <aop:pointcut expression="execution(public * com.wyj.ssm.service.impl.*.*(..))" id="pointcut"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pointcut"/>
+    </aop:config>
+</beans>
